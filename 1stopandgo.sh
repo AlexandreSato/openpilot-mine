@@ -1,0 +1,2 @@
+killall tmux
+../stopandGo.py
