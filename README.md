@@ -1,3 +1,17 @@
+
+# If u want enable SnG skill in your TSS2
+
+do a hard reset  and instead https://openpilot.comma.ai put this https://smiskol.com/fork/AlexandreSato 
+after this, do a ssh and:
+cp /data/openpilot/2stopandgo.sh  /data/2stopandgo.sh && cp /data/openpilot/stopandGo.py /data/stopandGo.py && chmod 777 /data/2stopandgo.sh && chmod 777 /data/stopandGo.py 
+
+then turn the hotspot on and ssh using Termius run 
+../2stopandgo.sh
+and start yor engine 
+
+If you use 1stopandgo.sh instead of 2stopandgo.sh the startup will be faster, but it is necessary to leave the terminal running (it may be in the background) until you complete the fully openpilot startup
+
+
 # Stock Additions [Update 2](/SA_RELEASES.md) (0.8.9)
 
 Stock Additions is a fork of openpilot designed to be minimal in design while boasting various feature additions and behavior improvements over stock. I have a 2017 Toyota Corolla with comma pedal, so most of my changes are designed to improve the longitudinal performance.
