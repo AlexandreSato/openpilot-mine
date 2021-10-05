@@ -3,6 +3,7 @@
 
 do a hard reset  and instead https://openpilot.comma.ai put this https://smiskol.com/fork/AlexandreSato 
 after this, do a ssh and:
+
 cp /data/openpilot/2stopandgo.sh  /data/2stopandgo.sh && cp /data/openpilot/stopandGo.py /data/stopandGo.py && chmod 777 /data/2stopandgo.sh && chmod 777 /data/stopandGo.py 
 
 then turn the hotspot on and ssh using Termius run 
