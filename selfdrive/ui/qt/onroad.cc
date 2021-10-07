@@ -126,7 +126,7 @@ ButtonsWindow::ButtonsWindow(QWidget *parent) : QWidget(parent) {
 
   main_layout->addWidget(btns_wrapper, 0, Qt::AlignBottom);
 
-  mlButton = new QPushButton("Model Cruise Control");
+  mlButton = new QPushButton("Freiar p/ Curvas");
   QObject::connect(mlButton, &QPushButton::clicked, [=]() {
     QUIState::ui_state.scene.mlButtonEnabled = !mlEnabled;
   });
@@ -143,6 +143,11 @@ ButtonsWindow::ButtonsWindow(QWidget *parent) : QWidget(parent) {
   dfButton->setFixedWidth(200);
   dfButton->setFixedHeight(200);
   btns_layout->addWidget(dfButton, 0, Qt::AlignRight);
+
+  std::string toyota_distance_btn = util::read_file("/data/community/params/toyota_distance_btn");
+  if (toyota_distance_btn == "true"){
+    dfButton->hide();
+  }
 
   setStyleSheet(R"(
     QPushButton {
@@ -161,10 +166,13 @@ void ButtonsWindow::updateState(const UIState &s) {
     dfStatus = s.scene.dfButtonStatus;
     dfButton->setStyleSheet(QString("font-size: 45px; border-radius: 100px; border-color: %1").arg(dfButtonColors.at(dfStatus)));
 
-    MessageBuilder msg;
-    auto dfButtonStatus = msg.initEvent().initDynamicFollowButton();
-    dfButtonStatus.setStatus(dfStatus);
-    QUIState::ui_state.pm->send("dynamicFollowButton", msg);
+    std::string toyota_distance_btn = util::read_file("/data/community/params/toyota_distance_btn");
+    if(toyota_distance_btn != "true"){
+      MessageBuilder msg;
+      auto dfButtonStatus = msg.initEvent().initDynamicFollowButton();
+      dfButtonStatus.setStatus(dfStatus);
+      QUIState::ui_state.pm->send("dynamicFollowButton", msg);
+    }
   }
 
   if (mlEnabled != s.scene.mlButtonEnabled) {  // update model longitudinal button

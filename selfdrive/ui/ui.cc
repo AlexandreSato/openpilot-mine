@@ -294,8 +294,15 @@ QUIState::QUIState(QObject *parent) : QObject(parent) {
     "modelV2", "controlsState", "liveCalibration", "deviceState", "roadCameraState",
     "pandaState", "carParams", "driverMonitoringState", "sensorEvents", "carState", "liveLocationKalman",
   });
-  ui_state.pm = std::make_unique<PubMaster, const std::initializer_list<const char *>>({"laneSpeedButton", "dynamicFollowButton", "modelLongButton"});
-
+  std::string toyota_distance_btn = util::read_file("/data/community/params/toyota_distance_btn");
+  if(toyota_distance_btn == "true"){
+    // dynamicFollowButton publisher is moved to carState
+    ui_state.pm = std::make_unique<PubMaster, const std::initializer_list<const char *>>({"laneSpeedButton", "modelLongButton"});
+  }
+  else {
+    ui_state.pm = std::make_unique<PubMaster, const std::initializer_list<const char *>>({"laneSpeedButton", "dynamicFollowButton", "modelLongButton"});
+  }
+  
   ui_state.fb_w = vwp_w;
   ui_state.fb_h = vwp_h;
   ui_state.scene.started = false;
