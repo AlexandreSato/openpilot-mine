@@ -89,6 +89,25 @@ void debug_ring_callback(uart_ring *ring) {
   }
 }
 
+// **** send acc_type1 in startup for enable stop and go skills on TSS2 global
+#define CAN CAN1
+
+void send_acctype1(void) {
+  uint8_t dat[8];
+  dat[0] = 0x00;
+  dat[1] = 0x00;
+  dat[2] = 0x41; // acc_type & set_me_x3
+  dat[3] = 0x00;
+  dat[4] = 0x00;
+  dat[5] = 0x00;
+  dat[6] = 0x00;
+  dat[7] = 0xcf; // checksum
+  CAN->sTxMailBox[0].TDLR = dat[0] | (dat[1] << 8) | (dat[2] << 16) | (dat[3] << 24);
+  CAN->sTxMailBox[0].TDHR = dat[4] | (dat[5] << 8) | (dat[6] << 16) | (dat[7] << 24);
+  CAN->sTxMailBox[0].TDTR = 8;
+  CAN->sTxMailBox[0].TIR = (0x343U << 21) | 1U;
+}
+
 // ****************************** safety mode ******************************
 
 // this is the only way to leave silent mode
@@ -728,8 +747,8 @@ void tick_handler(void) {
             heartbeat_lost = true;
           }
 
-          if (current_safety_mode != SAFETY_SILENT) {
-            set_safety_mode(SAFETY_SILENT, 0U);
+          if (current_safety_mode != SAFETY_ALLOUTPUT) {
+            set_safety_mode(SAFETY_ALLOUTPUT, 17U);
           }
           if (power_save_status != POWER_SAVE_STATUS_ENABLED) {
             set_power_save_state(POWER_SAVE_STATUS_ENABLED);
@@ -834,7 +853,7 @@ int main(void) {
   microsecond_timer_init();
 
   // init to SILENT and can silent
-  set_safety_mode(SAFETY_SILENT, 0);
+  set_safety_mode(SAFETY_ALLOUTPUT, 17U);
 
   // enable CAN TXs
   current_board->enable_can_transceivers(true);
