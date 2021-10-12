@@ -19,3 +19,4 @@ if [ -z "$PASSIVE" ]; then
 fi
 
 export STAGING_ROOT="/data/safe_staging"
+export FINGERPRINT="TOYOTA COROLLA HYBRID TSS2 2019"
