@@ -1,18 +1,15 @@
 
-# If u want enable SnG skill in your TSS2
 
-do a hard reset  and instead https://openpilot.comma.ai put this https://smiskol.com/fork/AlexandreSato 
-after this, do a ssh and:
+# ABOUT THIS FORK
 
-cp /data/openpilot/2stopandgo.sh  /data/2stopandgo.sh && cp /data/openpilot/stopandGo.py /data/stopandGo.py && chmod 777 /data/2stopandgo.sh && chmod 777 /data/stopandGo.py 
+This fork enables Stop and Go in global vehicles based on Toyota Safet Sense 2. (Thanks to Virtually Chris, Shane Smiskol, @mlp, Grekiki, Alexandre Sato, Gravyfries and @Sunnyhaibin)
 
-then turn the hotspot on and ssh using Termius run 
-../2stopandgo.sh
-and start yor engine 
+it also has the steering wheel button to change the distance of follow running (thanks @Krkeegan).
 
-If you use 1stopandgo.sh instead of 2stopandgo.sh the startup will be faster, but it is necessary to leave the terminal running (it may be in the background) until you complete the fully openpilot startup
+WARNING: The essence of the concept of this fork is to be quick at startup to exploit on Toyota's PCM-Cruise. Therefore the fingerprint process is done by hard-coding to the detriment of the dynamic process that has been suppressed. 
+SO if your vehicle is different from "TOYOTA COROLLA HYBRID TSS2 2019" you will need to update the launch_env.sh file exactly as the description of your vehicle is written in values.py
 
-
+this fork is based in:
 # Stock Additions [Update 2](/SA_RELEASES.md) (0.8.9)
 
 Stock Additions is a fork of openpilot designed to be minimal in design while boasting various feature additions and behavior improvements over stock. I have a 2017 Toyota Corolla with comma pedal, so most of my changes are designed to improve the longitudinal performance.
