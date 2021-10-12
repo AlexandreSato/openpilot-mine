@@ -639,7 +639,7 @@ class Controls:
 
     self.last_model_long = self.sm_smiskol['modelLongButton'].enabled
 
-    if not self.read_only and self.initialized:
+    if not self.read_only:
       # send car controls over can
       can_sends = self.CI.apply(CC)
       self.pm.send('sendcan', can_list_to_can_capnp(can_sends, msgtype='sendcan', valid=CS.canValid))
@@ -736,7 +736,7 @@ class Controls:
 
     self.update_events(CS)
 
-    if not self.read_only and self.initialized:
+    if not self.read_only:
       # Update control state
       self.state_transition(CS)
       self.prof.checkpoint("State transition")
