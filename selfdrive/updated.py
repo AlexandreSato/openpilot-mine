@@ -40,10 +40,6 @@ from selfdrive.hardware import EON, TICI, HARDWARE
 from selfdrive.swaglog import cloudlog
 from selfdrive.controls.lib.alertmanager import set_offroad_alert
 
-from common.realtime import sec_since_boot
-from common.op_params import opParams
-from common.colors import COLORS
-
 LOCK_FILE = os.getenv("UPDATER_LOCK_FILE", "/tmp/safe_staging_overlay.lock")
 STAGING_ROOT = os.getenv("UPDATER_STAGING_ROOT", "/data/safe_staging")
 
@@ -53,8 +49,6 @@ OVERLAY_UPPER = os.path.join(STAGING_ROOT, "upper")
 OVERLAY_METADATA = os.path.join(STAGING_ROOT, "metadata")
 OVERLAY_MERGED = os.path.join(STAGING_ROOT, "merged")
 FINALIZED = os.path.join(STAGING_ROOT, "finalized")
-
-REBOOT_ON_UPDATE = opParams().get('update_behavior').lower().strip() == 'auto'  # if not auto, has to be alert
 
 
 class WaitTimeHelper:
@@ -118,7 +112,7 @@ def set_params(new_version: bool, failed_count: int, exception: Optional[str]) -
 
   if new_version:
     try:
-      with open(os.path.join(FINALIZED, "SA_RELEASES.md"), "rb") as f:
+      with open(os.path.join(FINALIZED, "RELEASES.md"), "rb") as f:
         r = f.read()
       r = r[:r.find(b'\n\n')]  # Slice latest release notes
       params.put("ReleaseNotes", r + b"\n")
@@ -222,11 +216,14 @@ def finalize_update() -> None:
     shutil.rmtree(FINALIZED)
   shutil.copytree(OVERLAY_MERGED, FINALIZED, symlinks=True)
 
+  run(["git", "reset", "--hard"], FINALIZED)
+  run(["git", "submodule", "foreach", "--recursive", "git", "reset"], FINALIZED)
+
   set_consistent_flag(True)
   cloudlog.info("done finalizing overlay")
 
 
-def handle_agnos_update(wait_helper):
+def handle_agnos_update(wait_helper: WaitTimeHelper) -> None:
   from selfdrive.hardware.tici.agnos import flash_agnos_update, get_target_slot_number
 
   cur_version = HARDWARE.get_os_version()
@@ -250,6 +247,8 @@ def handle_agnos_update(wait_helper):
 
 
 def handle_neos_update(wait_helper: WaitTimeHelper) -> None:
+  from selfdrive.hardware.eon.neos import download_neos_update
+
   cur_neos = HARDWARE.get_os_version()
   updated_neos = run(["bash", "-c", r"unset REQUIRED_NEOS_VERSION && source launch_env.sh && \
                        echo -n $REQUIRED_NEOS_VERSION"], OVERLAY_MERGED).strip()
@@ -261,8 +260,7 @@ def handle_neos_update(wait_helper: WaitTimeHelper) -> None:
   cloudlog.info(f"Beginning background download for NEOS {updated_neos}")
   set_offroad_alert("Offroad_NeosUpdate", True)
 
-  updater_path = os.path.join(OVERLAY_MERGED, "installer/updater/updater")
-  update_manifest = f"file://{OVERLAY_MERGED}/installer/updater/update.json"
+  update_manifest = os.path.join(OVERLAY_MERGED, "selfdrive/hardware/eon/neos.json")
 
   neos_downloaded = False
   start_time = time.monotonic()
@@ -271,9 +269,9 @@ def handle_neos_update(wait_helper: WaitTimeHelper) -> None:
         (time.monotonic() - start_time < 60*60*24):
     wait_helper.ready_event.clear()
     try:
-      run([updater_path, "bgcache", update_manifest], OVERLAY_MERGED, low_priority=True)
+      download_neos_update(update_manifest, cloudlog)
       neos_downloaded = True
-    except subprocess.CalledProcessError:
+    except Exception:
       cloudlog.info("NEOS background download failed, retrying")
       wait_helper.sleep(120)
 
@@ -284,7 +282,7 @@ def handle_neos_update(wait_helper: WaitTimeHelper) -> None:
   cloudlog.info(f"NEOS background download successful, took {time.monotonic() - start_time} seconds")
 
 
-def check_git_fetch_result(fetch_txt):
+def check_git_fetch_result(fetch_txt: str) -> bool:
   err_msg = "Failed to add the host to the list of known hosts (/data/data/com.termux/files/home/.ssh/known_hosts).\n"
   return len(fetch_txt) > 0 and (fetch_txt != err_msg)
 
@@ -339,20 +337,7 @@ def fetch_update(wait_helper: WaitTimeHelper) -> bool:
   return new_version
 
 
-class AutoReboot:
-  def __init__(self):
-    self.min_reboot_time = 5. * 60
-    self.need_reboot = False
-    self.time_offroad = 0.0
-
-  @property
-  def should_reboot(self):
-    return (sec_since_boot() - self.time_offroad > self.min_reboot_time
-            and self.need_reboot and REBOOT_ON_UPDATE)
-
-
 def main():
-  auto_reboot = AutoReboot()
   params = Params()
 
   if params.get_bool("DisableUpdates"):
@@ -360,6 +345,12 @@ def main():
 
   if EON and os.geteuid() != 0:
     raise RuntimeError("updated must be launched as root!")
+
+  ov_lock_fd = open(LOCK_FILE, 'w')
+  try:
+    fcntl.flock(ov_lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+  except IOError as e:
+    raise RuntimeError("couldn't get overlay lock; is another updated running?") from e
 
   # Set low io priority
   proc = psutil.Process()
@@ -370,11 +361,9 @@ def main():
   if Path(os.path.join(STAGING_ROOT, "old_openpilot")).is_dir():
     cloudlog.event("update installed")
 
-  ov_lock_fd = open(LOCK_FILE, 'w')
-  try:
-    fcntl.flock(ov_lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
-  except IOError as e:
-    raise RuntimeError("couldn't get overlay lock; is another updated running?") from e
+  if not params.get("InstallDate"):
+    t = datetime.datetime.utcnow().isoformat()
+    params.put("InstallDate", t.encode('utf8'))
 
   # Wait for IsOffroad to be set before our first update attempt
   wait_helper = WaitTimeHelper(proc)
@@ -398,7 +387,6 @@ def main():
     time_wrong = datetime.datetime.utcnow().year < 2019
     is_onroad = not params.get_bool("IsOffroad")
     if is_onroad or time_wrong:
-      auto_reboot.time_offroad = sec_since_boot()
       wait_helper.sleep(30)
       cloudlog.info("not running updater, not offroad")
       continue
@@ -417,14 +405,6 @@ def main():
       # Fetch updates at most every 10 minutes
       if internet_ok and (update_now or time.monotonic() - last_fetch_time > 60*10):
         new_version = fetch_update(wait_helper)
-
-        auto_reboot.need_reboot |= new_version
-        if auto_reboot.should_reboot:
-          cloudlog.info(COLORS.RED + "AUTO UPDATE: REBOOTING" + COLORS.ENDC)
-          HARDWARE.reboot()
-        elif auto_reboot.need_reboot:
-          cloudlog.info(COLORS.BLUE_GREEN + "UPDATE FOUND, waiting {} sec. until reboot".format(auto_reboot.min_reboot_time - (sec_since_boot() - auto_reboot.time_offroad)) + COLORS.ENDC)
-
         update_failed_count = 0
         last_fetch_time = time.monotonic()
 

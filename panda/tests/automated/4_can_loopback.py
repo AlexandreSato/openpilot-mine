@@ -214,12 +214,16 @@ def test_bulk_write(p):
 
   def flood_tx(panda):
     print('Sending!')
-    msg = b"\xaa" * 4
-    packet = [[0xaa, None, msg, 0], [0xaa, None, msg, 1], [0xaa, None, msg, 2]] * NUM_MESSAGES_PER_BUS
+    msg = b"\xaa" * 8
+    packet = []
+    # start with many messages on a single bus (higher contention for single TX ring buffer)
+    packet += [[0xaa, None, msg, 0]] * NUM_MESSAGES_PER_BUS
+    # end with many messages on multiple buses
+    packet += [[0xaa, None, msg, 0], [0xaa, None, msg, 1], [0xaa, None, msg, 2]] * NUM_MESSAGES_PER_BUS
 
     # Disable timeout
     panda.can_send_many(packet, timeout=0)
-    print(f"Done sending {3*NUM_MESSAGES_PER_BUS} messages!")
+    print(f"Done sending {4 * NUM_MESSAGES_PER_BUS} messages!")
 
   # Start heartbeat
   start_heartbeat_thread(p)
@@ -235,14 +239,14 @@ def test_bulk_write(p):
   rx = []
   old_len = 0
   start_time = time.time()
-  while time.time() - start_time < 2 or len(rx) > old_len:
+  while time.time() - start_time < 5 or len(rx) > old_len:
     old_len = len(rx)
     rx.extend(panda_jungle.can_recv())
   print(f"Received {len(rx)} messages")
 
   # All messages should have been received
-  if len(rx) != 3 * NUM_MESSAGES_PER_BUS:
-    Exception("Did not receive all messages!")
+  if len(rx) != 4 * NUM_MESSAGES_PER_BUS:
+    raise Exception("Did not receive all messages!")
 
   # Set back to silent mode
   p.set_safety_mode(Panda.SAFETY_SILENT)

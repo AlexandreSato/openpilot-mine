@@ -1,10 +1,6 @@
 using Cxx = import "./include/c++.capnp";
 $Cxx.namespace("cereal");
 
-using Java = import "./include/java.capnp";
-$Java.package("ai.comma.openpilot.cereal");
-$Java.outerClassname("Car");
-
 @0x8e2af1e708af8b8d;
 
 # ******* events causing controls state machine transition *******
@@ -88,9 +84,7 @@ struct CarEvent @0x9b1657f34caf3ad3 {
     startupNoCar @76;
     startupNoControl @77;
     startupMaster @78;
-    startupFuzzyFingerprint @97;
     startupNoFw @104;
-    startupZss @106;
     fcw @79;
     steerSaturated @80;
     belowEngageSpeed @84;
@@ -131,6 +125,7 @@ struct CarEvent @0x9b1657f34caf3ad3 {
     neosUpdateRequiredDEPRECATED @88;
     modelLagWarningDEPRECATED @93;
     startupOneplusDEPRECATED @82;
+    startupFuzzyFingerprintDEPRECATED @97;
   }
 }
 
@@ -149,7 +144,7 @@ struct CarState {
   wheelSpeeds @2 :WheelSpeeds;
 
   # gas pedal, 0.0-1.0
-  gas @3 :Float32;        # this is user + computer
+  gas @3 :Float32;        # this is user pedal only
   gasPressed @4 :Bool;    # this is user pedal only
 
   # brake pedal, 0.0-1.0
@@ -249,7 +244,7 @@ struct CarState {
   }
 
   errorsDEPRECATED @0 :List(CarEvent.EventName);
-  brakeLights @19 :Bool;
+  brakeLightsDEPRECATED @19 :Bool;
 }
 
 # ******* radar state @ 20hz *******
@@ -380,14 +375,11 @@ struct CarParams {
   enableDsu @5 :Bool;        # driving support unit
   enableApgs @6 :Bool;       # advanced parking guidance system
   enableBsm @56 :Bool;       # blind spot monitoring
-  hasStockCamera @57 :Bool;  # factory LKAS/LDW camera is present
 
   minEnableSpeed @7 :Float32;
   minSteerSpeed @8 :Float32;
   maxSteeringAngleDeg @54 :Float32;
-  safetyModel @9 :SafetyModel;
-  safetyModelPassive @42 :SafetyModel = silent;
-  safetyParam @10 :Int16;
+  safetyConfigs @62 :List(SafetyConfig);
 
   steerMaxBP @11 :List(Float32);
   steerMaxV @12 :List(Float32);
@@ -414,16 +406,17 @@ struct CarParams {
     pid @26 :LateralPIDTuning;
     indi @27 :LateralINDITuning;
     lqr @40 :LateralLQRTuning;
-    model @59 :LateralModelTuning;
   }
 
   steerLimitAlert @28 :Bool;
   steerLimitTimer @47 :Float32;  # time before steerLimitAlert is issued
 
   vEgoStopping @29 :Float32; # Speed at which the car goes into stopping state
+  vEgoStarting @59 :Float32; # Speed at which the car goes into starting state
   directAccelControl @30 :Bool; # Does the car have direct accel control or just gas/brake
   stoppingControl @31 :Bool; # Does the car allows full control even at lows speeds when stopping
   startAccel @32 :Float32; # Required acceleraton to overcome creep braking
+  stopAccel @60 :Float32; # Required acceleraton to keep vehicle stationary
   steerRateCost @33 :Float32; # Lateral MPC cost on steering rate
   steerControlType @34 :SteerControlType;
   radarOffCan @35 :Bool; # True when radar objects aren't visible on CAN
@@ -432,7 +425,8 @@ struct CarParams {
   startingAccelRate @53 :Float32; # m/s^2/s while trying to start
 
   steerActuatorDelay @36 :Float32; # Steering wheel actuator delay in seconds
-  longitudinalActuatorDelay @58 :Float32; # Gas/Brake actuator delay in seconds
+  longitudinalActuatorDelayLowerBound @61 :Float32; # Gas/Brake actuator delay in seconds, lower bound
+  longitudinalActuatorDelayUpperBound @58 :Float32; # Gas/Brake actuator delay in seconds, upper bound
   openpilotLongitudinalControl @37 :Bool; # is openpilot doing the longitudinal control?
   carVin @38 :Text; # VIN number queried during fingerprinting
   dashcamOnly @41: Bool;
@@ -443,7 +437,11 @@ struct CarParams {
   communityFeature @46: Bool;  # true if a community maintained feature is detected
   fingerprintSource @49: FingerprintSource;
   networkLocation @50 :NetworkLocation;  # Where Panda/C2 is integrated into the car's CAN network
-  hasZss @60: Bool;  # true if ZSS is detected
+
+  struct SafetyConfig {
+    safetyModel @0 :SafetyModel;
+    safetyParam @1 :Int16;
+  }
 
   struct LateralParams {
     torqueBP @0 :List(Int32);
@@ -455,10 +453,7 @@ struct CarParams {
     kpV @1 :List(Float32);
     kiBP @2 :List(Float32);
     kiV @3 :List(Float32);
-    kdBP @4 :List(Float32) = [0.];
-    kdV @5 :List(Float32) = [0.];
-    kf @6 :Float32;
-    newKfTuned @7 :Bool;
+    kf @4 :Float32;
   }
 
   struct LongitudinalPIDTuning {
@@ -466,20 +461,18 @@ struct CarParams {
     kpV @1 :List(Float32);
     kiBP @2 :List(Float32);
     kiV @3 :List(Float32);
-    kdBP @4 :List(Float32) = [0.];
-    kdV @5 :List(Float32) = [0.];
-    deadzoneBP @6 :List(Float32);
-    deadzoneV @7 :List(Float32);
+    deadzoneBP @4 :List(Float32);
+    deadzoneV @5 :List(Float32);
   }
 
   struct LateralINDITuning {
-    outerLoopGainBP @4 :List(Float32) = [0.];
+    outerLoopGainBP @4 :List(Float32);
     outerLoopGainV @5 :List(Float32);
-    innerLoopGainBP @6 :List(Float32) = [0.];
+    innerLoopGainBP @6 :List(Float32);
     innerLoopGainV @7 :List(Float32);
-    timeConstantBP @8 :List(Float32) = [0.];
+    timeConstantBP @8 :List(Float32);
     timeConstantV @9 :List(Float32);
-    actuatorEffectivenessBP @10 :List(Float32) = [0.];
+    actuatorEffectivenessBP @10 :List(Float32);
     actuatorEffectivenessV @11 :List(Float32);
 
     outerLoopGainDEPRECATED @0 :Float32;
@@ -500,12 +493,6 @@ struct CarParams {
 
     k @6 :List(Float32);  # LQR gain
     l @7 :List(Float32);  # Kalman gain
-  }
-
-  struct LateralModelTuning {
-    name @0 :Text;
-    multiplier @1 :Float32;
-    useRates @2 :Bool;
   }
 
   enum SafetyModel {
@@ -534,6 +521,7 @@ struct CarParams {
     subaruLegacy @22;  # pre-Global platform
     hyundaiLegacy @23;
     hyundaiCommunity @24;
+    stellantis @25;
   }
 
   enum SteerControlType {
@@ -593,4 +581,8 @@ struct CarParams {
 
   enableCameraDEPRECATED @4 :Bool;
   isPandaBlackDEPRECATED @39: Bool;
+  hasStockCameraDEPRECATED @57 :Bool;
+  safetyParamDEPRECATED @10 :Int16;
+  safetyModelDEPRECATED @9 :SafetyModel;
+  safetyModelPassiveDEPRECATED @42 :SafetyModel = silent;
 }

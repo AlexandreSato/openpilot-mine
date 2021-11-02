@@ -7,8 +7,6 @@ from selfdrive.car.toyota.toyotacan import create_steer_command, create_ui_comma
 from selfdrive.car.toyota.values import CAR, STATIC_DSU_MSGS, NO_STOP_TIMER_CAR, TSS2_CAR, \
                                         MIN_ACC_SPEED, PEDAL_HYST_GAP, PEDAL_SCALE, CarControllerParams
 from opendbc.can.packer import CANPacker
-from common.op_params import opParams
-
 VisualAlert = car.CarControl.HUDControl.VisualAlert
 
 
@@ -27,21 +25,6 @@ def accel_hysteresis(accel, accel_steady, enabled):
   return accel, accel_steady
 
 
-def coast_accel(speed):  # given a speed, output coasting acceleration
-  points = [[0.0, 0.03], [.166, .424], [.335, .568],
-            [.731, .440], [1.886, 0.262], [2.809, -0.207],
-            [3.443, -0.249], [MIN_ACC_SPEED, -0.145]]
-  return interp(speed, *zip(*points))
-
-
-def compute_gb_pedal(accel, speed):
-  _a3, _a4, _a5, _offset, _e1, _e2, _e3, _e4, _e5, _e6, _e7, _e8 = [-0.07264304340456754, -0.007522016704006004, 0.16234124452228196, 0.0029096574419830296, 1.1674372321165579e-05, -0.008010070095545522, -5.834025253616562e-05, 0.04722441060805912, 0.001887454016549489, -0.0014370672920621269, -0.007577594283906699, 0.01943515032956308]
-  speed_part = (_e5 * accel + _e6) * speed ** 2 + (_e7 * accel + _e8) * speed
-  accel_part = ((_e1 * speed + _e2) * accel ** 5 + (_e3 * speed + _e4) * accel ** 4 + _a3 * accel ** 3 + _a4 * accel ** 2 + _a5 * accel)
-  return speed_part + accel_part + _offset
-
-
-
 class CarController():
   def __init__(self, dbc_name, CP, VM):
     self.last_steer = 0
@@ -51,7 +34,6 @@ class CarController():
     self.standstill_req = False
     self.steer_rate_limited = False
     self.use_interceptor = False
-    self.standstill_hack = opParams().get('standstill_hack')
 
     self.packer = CANPacker(dbc_name)
 
@@ -74,8 +56,8 @@ class CarController():
       if self.use_interceptor and enabled:
         # only send negative accel when using interceptor. gas handles acceleration
         # +0.18 m/s^2 offset to reduce ABS pump usage when OP is engaged
-        if pcm_accel_cmd > coast_accel(CS.out.vEgo):
-          interceptor_gas_cmd = clip(compute_gb_pedal(pcm_accel_cmd, CS.out.vEgo), 0., 1.)
+        MAX_INTERCEPTOR_GAS = interp(CS.out.vEgo, [0.0, MIN_ACC_SPEED], [0.2, 0.5])
+        interceptor_gas_cmd = clip(actuators.accel / PEDAL_SCALE, 0., MAX_INTERCEPTOR_GAS)
         pcm_accel_cmd = 0.18 - max(0, -actuators.accel)
 
     pcm_accel_cmd, self.accel_steady = accel_hysteresis(pcm_accel_cmd, self.accel_steady, enabled)
@@ -87,18 +69,19 @@ class CarController():
     self.steer_rate_limited = new_steer != apply_steer
 
     # Cut steering while we're in a known fault state (2s)
-    if not enabled or CS.steer_state in [9, 25] or abs(CS.out.steeringRateDeg) > 100:
+    if not enabled or CS.steer_state in [9, 25]:
       apply_steer = 0
       apply_steer_req = 0
     else:
       apply_steer_req = 1
 
+    # TODO: probably can delete this. CS.pcm_acc_status uses a different signal
+    # than CS.cruiseState.enabled. confirm they're not meaningfully different
     if not enabled and CS.pcm_acc_status:
-      # send pcm acc cancel cmd if drive is disabled but pcm is still on, or if the system can't be activated
       pcm_cancel_cmd = 1
 
     # on entering standstill, send standstill request
-    if CS.out.standstill and not self.last_standstill and CS.CP.carFingerprint not in NO_STOP_TIMER_CAR and not self.standstill_hack:
+    if CS.out.standstill and not self.last_standstill and CS.CP.carFingerprint not in NO_STOP_TIMER_CAR:
       self.standstill_req = True
     if CS.pcm_acc_status != 8:
       # pcm entered standstill or it's disabled
@@ -133,9 +116,9 @@ class CarController():
       if pcm_cancel_cmd and CS.CP.carFingerprint == CAR.LEXUS_IS:
         can_sends.append(create_acc_cancel_command(self.packer))
       elif CS.CP.openpilotLongitudinalControl:
-        can_sends.append(create_accel_command(self.packer, pcm_accel_cmd, pcm_cancel_cmd, self.standstill_req, lead, CS.acc_type, CS.distance_btn))
+        can_sends.append(create_accel_command(self.packer, pcm_accel_cmd, pcm_cancel_cmd, self.standstill_req, lead, CS.acc_type))
       else:
-        can_sends.append(create_accel_command(self.packer, 0, pcm_cancel_cmd, False, lead, CS.acc_type, CS.distance_btn))
+        can_sends.append(create_accel_command(self.packer, 0, pcm_cancel_cmd, False, lead, CS.acc_type))
 
     if frame % 2 == 0 and CS.CP.enableGasInterceptor:
       # send exactly zero if gas cmd is zero. Interceptor will send the max between read value and gas cmd.

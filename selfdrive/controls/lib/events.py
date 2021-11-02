@@ -204,7 +204,7 @@ def calibration_incomplete_alert(CP: car.CarParams, sm: messaging.SubMaster, met
 
 
 def no_gps_alert(CP: car.CarParams, sm: messaging.SubMaster, metric: bool) -> Alert:
-  gps_integrated = sm['pandaState'].pandaType in [log.PandaState.PandaType.uno, log.PandaState.PandaType.dos]
+  gps_integrated = sm['peripheralState'].pandaType in [log.PandaState.PandaType.uno, log.PandaState.PandaType.dos]
   return Alert(
     "Poor GPS reception",
     "If sky is visible, contact support" if gps_integrated else "Check GPS antenna placement",
@@ -217,14 +217,6 @@ def wrong_car_mode_alert(CP: car.CarParams, sm: messaging.SubMaster, metric: boo
   if CP.carName == "honda":
     text = "Main Switch Off"
   return NoEntryAlert(text, duration_hud_alert=0.)
-
-
-def startup_fuzzy_fingerprint_alert(CP: car.CarParams, sm: messaging.SubMaster, metric: bool) -> Alert:
-  return Alert(
-    "WARNING: No Exact Match on Car Model",
-    f"Closest Match: {CP.carFingerprint.title()[:40]}",
-    AlertStatus.userPrompt, AlertSize.mid,
-    Priority.LOWER, VisualAlert.none, AudibleAlert.none, 0., 0., 10.)
 
 
 def joystick_alert(CP: car.CarParams, sm: messaging.SubMaster, metric: bool) -> Alert:
@@ -244,62 +236,6 @@ EVENTS: Dict[int, Dict[str, Union[Alert, Callable[[Any, messaging.SubMaster, boo
 
   # ********** events only containing alerts displayed in all states **********
 
-'modelLongAlert': {
-    ET.PERMANENT: Alert(
-      "Model longitudinal ",
-      "Remain alert",
-      AlertStatus.normal, AlertSize.mid,
-      Priority.LOW, VisualAlert.none, AudibleAlert.chimeWarning1, .4, 0., 1.5),
-  },
-
-  'dfButtonAlert': {
-    ET.PERMANENT: Alert(
-      "Using profile: ",
-      "",
-      AlertStatus.normal, AlertSize.mid,
-      Priority.LOW, VisualAlert.none, AudibleAlert.chimeWarning1, .4, 0., 1.5),
-  },
-
-  'lsButtonAlert': {
-    ET.PERMANENT: Alert(
-      "Lane Speed set to: ",
-      "",
-      AlertStatus.normal, AlertSize.small,
-      Priority.LOW, VisualAlert.none, AudibleAlert.chimeWarning1, .4, 0., 1.5),
-  },
-
-  'dfButtonAlertSilent': {
-    ET.PERMANENT: Alert(
-      "Dynamic follow: ",
-      "",
-      AlertStatus.normal, AlertSize.small,
-      Priority.LOWER, VisualAlert.none, AudibleAlert.none, .2, 0., 1.5),
-  },
-
-  'laneSpeedAlert': {
-    ET.PERMANENT: Alert(
-      "",
-      "",
-      AlertStatus.normal, AlertSize.mid,
-      Priority.LOW, VisualAlert.none, AudibleAlert.chimeWarning1, .4, 0., .1),
-  },
-
-  'laneSpeedAlertSilent': {
-    ET.PERMANENT: Alert(
-      "",
-      "",
-      AlertStatus.normal, AlertSize.mid,
-      Priority.LOW, VisualAlert.none, AudibleAlert.none, .2, 0., .1),
-  },
-
-  'laneSpeedKeeping': {
-    ET.PERMANENT: Alert(
-      "KEEPING ",
-      "",
-      AlertStatus.normal, AlertSize.mid,
-      Priority.LOW, VisualAlert.none, AudibleAlert.none, .2, 0., .1),
-  },
-
   EventName.joystickDebug: {
     ET.WARNING: joystick_alert,
     ET.PERMANENT: Alert(
@@ -318,7 +254,7 @@ EVENTS: Dict[int, Dict[str, Union[Alert, Callable[[Any, messaging.SubMaster, boo
       "Be ready to take over at any time",
       "Always keep hands on wheel and eyes on road",
       AlertStatus.normal, AlertSize.mid,
-      Priority.LOWER, VisualAlert.none, AudibleAlert.none, 0., 0., 5.),
+      Priority.LOWER, VisualAlert.none, AudibleAlert.none, 0., 0., 10.),
   },
 
   EventName.startupMaster: {
@@ -326,7 +262,7 @@ EVENTS: Dict[int, Dict[str, Union[Alert, Callable[[Any, messaging.SubMaster, boo
       "WARNING: This branch is not tested",
       "Always keep hands on wheel and eyes on road",
       AlertStatus.userPrompt, AlertSize.mid,
-      Priority.LOWER, VisualAlert.none, AudibleAlert.none, 0., 0., 5.),
+      Priority.LOWER, VisualAlert.none, AudibleAlert.none, 0., 0., 10.),
   },
 
   # Car is recognized, but marked as dashcam only
@@ -347,30 +283,10 @@ EVENTS: Dict[int, Dict[str, Union[Alert, Callable[[Any, messaging.SubMaster, boo
       Priority.LOWER, VisualAlert.none, AudibleAlert.none, 0., 0., 10.),
   },
 
-  EventName.startupZss: {
-    ET.PERMANENT: Alert(
-      "Using Zorro steering sensor",
-      "Always keep hands on wheel and eyes on road",
-      AlertStatus.normal, AlertSize.mid,
-      Priority.LOWER, VisualAlert.none, AudibleAlert.none, 0., 0., 5.),
-  },
-
-  # openpilot uses the version strings from various ECUs to detect the correct car model.
-  # Usually all ECUs are recognized and an exact match to a car model can be made. Sometimes
-  # one or two ECUs have unrecognized versions, but the others are present in the database.
-  # If openpilot is confident about the match to a car model, it fingerprints anyway.
-  # In this case an alert is thrown since there is a small chance the wrong car was detected
-  # and the user should pay extra attention.
-  # This alert can be prevented by adding all ECU firmware version to openpilot:
-  # https://github.com/commaai/openpilot/wiki/Fingerprinting
-  EventName.startupFuzzyFingerprint: {
-    ET.PERMANENT: startup_fuzzy_fingerprint_alert,
-  },
-
   EventName.startupNoFw: {
     ET.PERMANENT: Alert(
       "Car Unrecognized",
-      "Check All Connections",
+      "Check comma power connections",
       AlertStatus.userPrompt, AlertSize.mid,
       Priority.LOWER, VisualAlert.none, AudibleAlert.none, 0., 0., 10.),
   },
@@ -876,7 +792,7 @@ EVENTS: Dict[int, Dict[str, Union[Alert, Callable[[Any, messaging.SubMaster, boo
       "",
       AlertStatus.normal, AlertSize.full,
       Priority.LOWEST, VisualAlert.none, AudibleAlert.none, 0., 0., .2, creation_delay=0.5),
-    ET.IMMEDIATE_DISABLE: ImmediateDisableAlert("Reverse Gear"),
+    ET.USER_DISABLE: ImmediateDisableAlert("Reverse Gear"),
     ET.NO_ENTRY: NoEntryAlert("Reverse Gear"),
   },
 

@@ -13,7 +13,7 @@ QString getBrand() {
 }
 
 QString getBrandVersion() {
-  return getBrand() + " v" + QString::fromStdString(Params().get("Version")).left(35).trimmed();
+  return getBrand() + " v" + QString::fromStdString(Params().get("Version")).left(14).trimmed();
 }
 
 std::optional<QString> getDongleId() {

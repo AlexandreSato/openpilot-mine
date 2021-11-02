@@ -1,15 +1,15 @@
 #include "selfdrive/ui/qt/onroad.h"
 
-#include <iostream>
 #include <QDebug>
 
-#include "selfdrive/common/swaglog.h"
 #include "selfdrive/common/timing.h"
 #include "selfdrive/ui/paint.h"
 #include "selfdrive/ui/qt/util.h"
+#include "selfdrive/ui/qt/api.h"
 #ifdef ENABLE_MAPS
 #include "selfdrive/ui/qt/maps/map.h"
 #endif
+
 
 OnroadWindow::OnroadWindow(QWidget *parent) : QWidget(parent) {
   QVBoxLayout *main_layout  = new QVBoxLayout(this);
@@ -18,22 +18,13 @@ OnroadWindow::OnroadWindow(QWidget *parent) : QWidget(parent) {
   stacked_layout->setStackingMode(QStackedLayout::StackAll);
   main_layout->addLayout(stacked_layout);
 
-  // old UI on bottom
-  nvg = new NvgWindow(this);
-  QObject::connect(nvg, &NvgWindow::resizeSignal, [=](int w, int h){
-    buttons->setFixedWidth(w);
-  });
-  QObject::connect(this, &OnroadWindow::updateStateSignal, nvg, &NvgWindow::updateState);
+  nvg = new NvgWindow(VISION_STREAM_RGB_BACK, this);
 
   QWidget * split_wrapper = new QWidget;
   split = new QHBoxLayout(split_wrapper);
   split->setContentsMargins(0, 0, 0, 0);
   split->setSpacing(0);
   split->addWidget(nvg);
-
-  buttons = new ButtonsWindow(this);
-  QObject::connect(this, &OnroadWindow::updateStateSignal, buttons, &ButtonsWindow::updateState);
-  stacked_layout->addWidget(buttons);
 
   stacked_layout->addWidget(split_wrapper);
 
@@ -88,12 +79,16 @@ void OnroadWindow::mousePressEvent(QMouseEvent* e) {
 void OnroadWindow::offroadTransition(bool offroad) {
 #ifdef ENABLE_MAPS
   if (!offroad) {
-    QString token = QString::fromStdString(Params().get("MapboxToken"));
-    if (map == nullptr && !token.isEmpty()) {
+    if (map == nullptr && QUIState::ui_state.has_prime) {
       QMapboxGLSettings settings;
+
+      // Valid for 4 weeks since we can't swap tokens on the fly
+      QString token = CommaApi::create_jwt({}, 4 * 7 * 24 * 3600);
+
       if (!Hardware::PC()) {
         settings.setCacheDatabasePath("/data/mbgl-cache.db");
       }
+      settings.setApiBaseUrl(MAPS_HOST);
       settings.setCacheDatabaseMaximumSize(20 * 1024 * 1024);
       settings.setAccessToken(token.trimmed());
 
@@ -107,6 +102,10 @@ void OnroadWindow::offroadTransition(bool offroad) {
 #endif
 
   alerts->updateAlert({}, bg);
+
+  // update stream type
+  bool wide_cam = Hardware::TICI() && Params().getBool("EnableWideCamera");
+  nvg->setStreamType(wide_cam ? VISION_STREAM_RGB_WIDE : VISION_STREAM_RGB_BACK);
 }
 
 void OnroadWindow::paintEvent(QPaintEvent *event) {
@@ -115,76 +114,6 @@ void OnroadWindow::paintEvent(QPaintEvent *event) {
 }
 
 // ***** onroad widgets *****
-
-ButtonsWindow::ButtonsWindow(QWidget *parent) : QWidget(parent) {
-  QVBoxLayout *main_layout  = new QVBoxLayout(this);
-
-  QWidget *btns_wrapper = new QWidget;
-  QHBoxLayout *btns_layout  = new QHBoxLayout(btns_wrapper);
-  btns_layout->setSpacing(0);
-  btns_layout->setContentsMargins(30, 0, 30, 30);
-
-  main_layout->addWidget(btns_wrapper, 0, Qt::AlignBottom);
-
-  mlButton = new QPushButton("e2e_long");
-  QObject::connect(mlButton, &QPushButton::clicked, [=]() {
-    QUIState::ui_state.scene.mlButtonEnabled = !mlEnabled;
-  });
-  mlButton->setFixedWidth(575);
-  mlButton->setFixedHeight(150);
-  btns_layout->addStretch(4);
-  btns_layout->addWidget(mlButton, 0, Qt::AlignHCenter | Qt::AlignBottom);
-  btns_layout->addStretch(3);
-
-  dfButton = new QPushButton("DF\nprofile");
-  QObject::connect(dfButton, &QPushButton::clicked, [=]() {
-    QUIState::ui_state.scene.dfButtonStatus = dfStatus < 3 ? dfStatus + 1 : 0;  // wrap back around
-  });
-  dfButton->setFixedWidth(200);
-  dfButton->setFixedHeight(200);
-  btns_layout->addWidget(dfButton, 0, Qt::AlignRight);
-
-  std::string toyota_distance_btn = util::read_file("/data/community/params/toyota_distance_btn");
-  if (toyota_distance_btn == "true"){
-    dfButton->hide();
-  }
-
-  setStyleSheet(R"(
-    QPushButton {
-      color: white;
-      text-align: center;
-      padding: 0px;
-      border-width: 12px;
-      border-style: solid;
-      background-color: rgba(75, 75, 75, 0.3);
-    }
-  )");
-}
-
-void ButtonsWindow::updateState(const UIState &s) {
-  if (dfStatus != s.scene.dfButtonStatus) {  // update dynamic follow profile button
-    dfStatus = s.scene.dfButtonStatus;
-    dfButton->setStyleSheet(QString("font-size: 45px; border-radius: 100px; border-color: %1").arg(dfButtonColors.at(dfStatus)));
-
-    std::string toyota_distance_btn = util::read_file("/data/community/params/toyota_distance_btn");
-    if(toyota_distance_btn != "true"){
-      MessageBuilder msg;
-      auto dfButtonStatus = msg.initEvent().initDynamicFollowButton();
-      dfButtonStatus.setStatus(dfStatus);
-      QUIState::ui_state.pm->send("dynamicFollowButton", msg);
-    }
-  }
-
-  if (mlEnabled != s.scene.mlButtonEnabled) {  // update model longitudinal button
-    mlEnabled = s.scene.mlButtonEnabled;
-    mlButton->setStyleSheet(QString("font-size: 50px; border-radius: 25px; border-color: %1").arg(mlButtonColors.at(mlEnabled)));
-
-    MessageBuilder msg;
-    auto mlButtonEnabled = msg.initEvent().initModelLongButton();
-    mlButtonEnabled.setEnabled(mlEnabled);
-    QUIState::ui_state.pm->send("modelLongButton", msg);
-  }
-}
 
 void OnroadAlerts::updateAlert(const Alert &a, const QColor &color) {
   if (!alert.equal(a) || color != bg) {
@@ -245,18 +174,8 @@ void OnroadAlerts::paintEvent(QPaintEvent *event) {
   }
 }
 
-
-NvgWindow::NvgWindow(QWidget *parent) : QOpenGLWidget(parent) {
-  setAttribute(Qt::WA_OpaquePaintEvent);
-}
-
-NvgWindow::~NvgWindow() {
-  makeCurrent();
-  doneCurrent();
-}
-
 void NvgWindow::initializeGL() {
-  initializeOpenGLFunctions();
+  CameraViewWidget::initializeGL();
   qInfo() << "OpenGL version:" << QString((const char*)glGetString(GL_VERSION));
   qInfo() << "OpenGL vendor:" << QString((const char*)glGetString(GL_VENDOR));
   qInfo() << "OpenGL renderer:" << QString((const char*)glGetString(GL_RENDERER));
@@ -264,25 +183,11 @@ void NvgWindow::initializeGL() {
 
   ui_nvg_init(&QUIState::ui_state);
   prev_draw_t = millis_since_boot();
-}
-
-void NvgWindow::updateState(const UIState &s) {
-  // Connecting to visionIPC requires opengl to be current
-  if (s.vipc_client->connected) {
-    makeCurrent();
-  }
-  if (isVisible() != s.vipc_client->connected) {
-    setVisible(s.vipc_client->connected);
-  }
-  repaint();
-}
-
-void NvgWindow::resizeGL(int w, int h) {
-  ui_resize(&QUIState::ui_state, w, h);
-  emit resizeSignal(w, h);  // for ButtonsWindow
+  setBackgroundColor(bg_colors[STATUS_DISENGAGED]);
 }
 
 void NvgWindow::paintGL() {
+  CameraViewWidget::paintGL();
   ui_draw(&QUIState::ui_state, width(), height());
 
   double cur_draw_t = millis_since_boot();

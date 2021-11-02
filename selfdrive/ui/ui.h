@@ -1,6 +1,5 @@
 #pragma once
 
-#include <atomic>
 #include <map>
 #include <memory>
 #include <string>
@@ -12,16 +11,12 @@
 #include "nanovg.h"
 
 #include "cereal/messaging/messaging.h"
-#include "cereal/visionipc/visionipc.h"
-#include "cereal/visionipc/visionipc_client.h"
 #include "common/transformations/orientation.hpp"
 #include "selfdrive/camerad/cameras/camera_common.h"
-#include "selfdrive/common/glutil.h"
 #include "selfdrive/common/mat.h"
 #include "selfdrive/common/modeldata.h"
 #include "selfdrive/common/params.h"
 #include "selfdrive/common/util.h"
-#include "selfdrive/common/visionimg.h"
 
 #define COLOR_BLACK nvgRGBA(0, 0, 0, 255)
 #define COLOR_BLACK_ALPHA(x) nvgRGBA(0, 0, 0, x)
@@ -35,8 +30,8 @@ typedef cereal::CarControl::HUDControl::AudibleAlert AudibleAlert;
 
 // TODO: this is also hardcoded in common/transformations/camera.py
 // TODO: choose based on frame input size
-const float y_offset = Hardware::TICI() ? 150.0 : 0.0;
-const float ZOOM = Hardware::TICI() ? 2912.8 : 2138.5;
+const float y_offset = Hardware::EON() ? 0.0 : 150.0;
+const float ZOOM = Hardware::EON() ? 2138.5 : 2912.8;
 
 typedef struct Rect {
   int x, y, w, h;
@@ -100,10 +95,6 @@ typedef struct {
 
 typedef struct UIScene {
 
-  int dfButtonStatus = 0;
-  int lsButtonStatus = 0;
-  bool mlButtonEnabled = false;
-
   mat3 view_from_calib;
   bool world_objects_visible;
 
@@ -127,34 +118,19 @@ typedef struct UIScene {
 } UIScene;
 
 typedef struct UIState {
-  VisionIpcClient * vipc_client;
-  VisionIpcClient * vipc_client_rear;
-  VisionIpcClient * vipc_client_wide;
-  VisionBuf * last_frame;
-
-  // framebuffer
-  int fb_w, fb_h;
-
-  // NVG
+  int fb_w = 0, fb_h = 0;
   NVGcontext *vg;
 
   // images
   std::map<std::string, int> images;
 
   std::unique_ptr<SubMaster> sm;
-  std::unique_ptr<PubMaster> pm;
 
   UIStatus status;
-  UIScene scene;
-
-  // graphics
-  std::unique_ptr<GLShader> gl_shader;
-  std::unique_ptr<EGLImageTexture> texture[UI_BUF_COUNT];
-
-  GLuint frame_vao, frame_vbo, frame_ibo;
-  mat4 rear_frame_mat;
+  UIScene scene = {};
 
   bool awake;
+  bool has_prime = false;
 
   float car_space_transform[6];
   bool wide_camera;
@@ -180,7 +156,6 @@ private slots:
 private:
   QTimer *timer;
   bool started_prev = true;
-  void saInit(const UIState &s);
 };
 
 

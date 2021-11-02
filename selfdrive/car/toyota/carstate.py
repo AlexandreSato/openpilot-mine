@@ -1,4 +1,3 @@
-import cereal.messaging as messaging
 from cereal import car
 from common.numpy_fast import mean
 from common.filter_simple import FirstOrderFilter
@@ -8,7 +7,6 @@ from selfdrive.car.interfaces import CarStateBase
 from opendbc.can.parser import CANParser
 from selfdrive.config import Conversions as CV
 from selfdrive.car.toyota.values import CAR, DBC, STEER_THRESHOLD, NO_STOP_TIMER_CAR, TSS2_CAR
-from common.op_params import opParams
 
 
 class CarState(CarStateBase):
@@ -23,19 +21,9 @@ class CarState(CarStateBase):
     self.needs_angle_offset = True
     self.accurate_steer_angle_seen = False
     self.angle_offset = FirstOrderFilter(None, 60.0, DT_CTRL, initialized=False)
-    self.has_zss = CP.hasZss
 
     self.low_speed_lockout = False
     self.acc_type = 1
-
-    # Toyota Distance Button
-    op_params = opParams()
-    self.param_toyota_distance_btn = op_params.get('toyota_distance_btn')
-    self.distance_btn = 0
-    self.distance_lines = 0
-    if self.param_toyota_distance_btn:
-      # Do publishing here
-      self.pm = messaging.PubMaster(['dynamicFollowButton'])
 
   def update(self, cp, cp_cam):
     ret = car.CarState.new_message()
@@ -45,7 +33,6 @@ class CarState(CarStateBase):
     ret.seatbeltUnlatched = cp.vl["SEATS_DOORS"]["SEATBELT_DRIVER_UNLATCHED"] != 0
 
     ret.brakePressed = cp.vl["BRAKE_MODULE"]["BRAKE_PRESSED"] != 0
-    ret.brakeLights = bool(cp.vl["ESP_CONTROL"]['BRAKE_LIGHTS_ACC'] or ret.brakePressed)
     if self.CP.enableGasInterceptor:
       ret.gas = (cp.vl["GAS_SENSOR"]["INTERCEPTOR_GAS"] + cp.vl["GAS_SENSOR"]["INTERCEPTOR_GAS2"]) / 2.
       ret.gasPressed = ret.gas > 15
@@ -64,22 +51,19 @@ class CarState(CarStateBase):
 
     ret.steeringAngleDeg = cp.vl["STEER_ANGLE_SENSOR"]["STEER_ANGLE"] + cp.vl["STEER_ANGLE_SENSOR"]["STEER_FRACTION"]
     torque_sensor_angle_deg = cp.vl["STEER_TORQUE_SENSOR"]["STEER_ANGLE"]
-    zss_angle_deg = cp.vl["SECONDARY_STEER_ANGLE"]["ZORRO_STEER"] if self.has_zss else 0.
 
-    # Some newer models have a more accurate angle measurement in the TORQUE_SENSOR message. Use if non-zero or ZSS
-    # Also only get offset when ZSS comes up in case it's slow to start sending messages
-    if abs(torque_sensor_angle_deg) > 1e-3 or (self.has_zss and abs(zss_angle_deg) > 1e-3):
+    # Some newer models have a more accurate angle measurement in the TORQUE_SENSOR message. Use if non-zero
+    if abs(torque_sensor_angle_deg) > 1e-3:
       self.accurate_steer_angle_seen = True
 
     if self.accurate_steer_angle_seen:
-      acc_angle_deg = zss_angle_deg if self.has_zss else torque_sensor_angle_deg
       # Offset seems to be invalid for large steering angles
       if abs(ret.steeringAngleDeg) < 90:
-        self.angle_offset.update(acc_angle_deg - ret.steeringAngleDeg)
+        self.angle_offset.update(torque_sensor_angle_deg - ret.steeringAngleDeg)
 
       if self.angle_offset.initialized:
         ret.steeringAngleOffsetDeg = self.angle_offset.x
-        ret.steeringAngleDeg = acc_angle_deg - self.angle_offset.x
+        ret.steeringAngleDeg = torque_sensor_angle_deg - self.angle_offset.x
 
     ret.steeringRateDeg = cp.vl["STEER_ANGLE_SENSOR"]["STEER_RATE"]
 
@@ -101,23 +85,12 @@ class CarState(CarStateBase):
       ret.cruiseState.available = cp.vl["PCM_CRUISE_2"]["MAIN_ON"] != 0
       ret.cruiseState.speed = cp.vl["PCM_CRUISE_2"]["SET_SPEED"] * CV.KPH_TO_MS
 
-    if self.CP.carFingerprint in TSS2_CAR:
-#      self.acc_type = cp_cam.vl["ACC_CONTROL"]["ACC_TYPE"]
-      if self.param_toyota_distance_btn:
-        self.distance_btn = 1 if cp_cam.vl["ACC_CONTROL"]["DISTANCE"] == 1 else 0
-        distance_lines = cp.vl["PCM_CRUISE_SM"]["DISTANCE_LINES"]
-        # ignore distance_line of 0 which is used when cruise is off or disengaged
-        if distance_lines in [1, 2, 3] and distance_lines != self.distance_lines:
-          dat = messaging.new_message('dynamicFollowButton')
-          # dynamicFollow uses 0: traffic, 1: relaxed, 2: stock
-          # toyota uses 1: close, 2: middle, 3: far
-          dat.dynamicFollowButton.status = distance_lines - 1
-          self.pm.send('dynamicFollowButton', dat)
-          self.distance_lines = distance_lines
+    # if self.CP.carFingerprint in TSS2_CAR:
+    #   self.acc_type = cp_cam.vl["ACC_CONTROL"]["ACC_TYPE"]
 
     # some TSS2 cars have low speed lockout permanently set, so ignore on those cars
     # these cars are identified by an ACC_TYPE value of 2.
-    # TODO: it may be possible to avoid the lockout and gain stop and go if you
+    # TODO: it is possible to avoid the lockout and gain stop and go if you
     # send your own ACC_CONTROL msg on startup with ACC_TYPE set to 1
     if (self.CP.carFingerprint not in TSS2_CAR and self.CP.carFingerprint != CAR.LEXUS_IS) or \
        (self.CP.carFingerprint in TSS2_CAR and self.acc_type == 1):
@@ -176,7 +149,6 @@ class CarState(CarStateBase):
       ("TURN_SIGNALS", "STEERING_LEVERS", 3),   # 3 is no blinkers
       ("LKA_STATE", "EPS_STATUS", 0),
       ("AUTO_HIGH_BEAM", "LIGHT_STALK", 0),
-      ("BRAKE_LIGHTS_ACC", "ESP_CONTROL", 0),
     ]
 
     checks = [
@@ -204,10 +176,6 @@ class CarState(CarStateBase):
       signals.append(("LOW_SPEED_LOCKOUT", "PCM_CRUISE_2", 0))
       checks.append(("PCM_CRUISE_2", 33))
 
-    if CP.hasZss:
-      signals.append(("ZORRO_STEER", "SECONDARY_STEER_ANGLE", 0))
-      checks.append(("SECONDARY_STEER_ANGLE", 80))
-
     # add gas interceptor reading if we are using it
     if CP.enableGasInterceptor:
       signals.append(("INTERCEPTOR_GAS", "GAS_SENSOR", 0))
@@ -224,10 +192,6 @@ class CarState(CarStateBase):
       checks += [
         ("BSM", 1)
       ]
-
-    if CP.carFingerprint in TSS2_CAR:
-      signals.append(("DISTANCE_LINES", "PCM_CRUISE_SM", 0))
-      checks.append(("PCM_CRUISE_SM", 1))
 
     return CANParser(DBC[CP.carFingerprint]["pt"], signals, checks, 0)
 
@@ -247,7 +211,6 @@ class CarState(CarStateBase):
 
     if CP.carFingerprint in TSS2_CAR:
       signals.append(("ACC_TYPE", "ACC_CONTROL", 0))
-      signals.append(("DISTANCE", "ACC_CONTROL", 0))
       checks.append(("ACC_CONTROL", 33))
 
     return CANParser(DBC[CP.carFingerprint]["pt"], signals, checks, 2)

@@ -66,7 +66,9 @@ jobs:
       - name: Build Docker image
         run: eval "$BUILD"
       - name: Run safety replay
-        run: $RUN "cd /tmp/openpilot/panda/tests/safety_replay && ./test_safety_replay.py"
+        run: $RUN "cd /tmp/openpilot/panda/tests/safety_replay &&
+                   scons -u --test .. &&
+                   ./test_safety_replay.py"
 
   misra:
     name: misra c2012
@@ -83,13 +85,13 @@ jobs:
       - uses: actions/upload-artifact@v2
         if: always()
         with:
-          name: cppcheck.txt
-          path: /tmp/misra/cppcheck_output.txt
+          name: cppcheck_output
+          path: /tmp/misra/cppcheck_*_output.txt
       - uses: actions/upload-artifact@v2
         if: always()
         with:
-          name: misra.txt
-          path: /tmp/misra/misra_output.txt
+          name: misra_output
+          path: /tmp/misra/misra_*_output.txt
 
   python_linter:
     name: python linter

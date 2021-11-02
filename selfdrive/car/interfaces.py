@@ -10,7 +10,6 @@ from selfdrive.config import Conversions as CV
 from selfdrive.controls.lib.drive_helpers import V_CRUISE_MAX
 from selfdrive.controls.lib.events import Events
 from selfdrive.controls.lib.vehicle_model import VehicleModel
-from common.op_params import opParams
 
 GearShifter = car.CarState.GearShifter
 EventName = car.CarEvent.EventName
@@ -29,7 +28,6 @@ class CarInterfaceBase():
   def __init__(self, CP, CarController, CarState):
     self.CP = CP
     self.VM = VehicleModel(CP)
-    self.op_params = opParams()
 
     self.frame = 0
     self.steer_warning = 0
@@ -51,16 +49,22 @@ class CarInterfaceBase():
     return ACCEL_MIN, ACCEL_MAX
 
   @staticmethod
-  def calc_accel_override(a_ego, a_target, v_ego, v_target):
-    return 1.
-
-  @staticmethod
   def get_params(candidate, fingerprint=gen_empty_fingerprint(), car_fw=None):
     raise NotImplementedError
 
   @staticmethod
   def init(CP, logcan, sendcan):
     pass
+
+  @staticmethod
+  def get_steer_feedforward_default(desired_angle, v_ego):
+    # Proportional to realigning tire momentum: lateral acceleration.
+    # TODO: something with lateralPlan.curvatureRates
+    return desired_angle * (v_ego**2)
+
+  @classmethod
+  def get_steer_feedforward_function(cls):
+    return cls.get_steer_feedforward_default
 
   # returns a set of default params to avoid repetition in car specific params
   @staticmethod
@@ -78,10 +82,13 @@ class CarInterfaceBase():
     ret.minEnableSpeed = -1. # enable is done by stock ACC, so ignore this
     ret.steerRatioRear = 0.  # no rear steering, at least on the listed cars aboveA
     ret.openpilotLongitudinalControl = False
-    ret.startAccel = 0.0
     ret.minSpeedCan = 0.3
-    ret.stoppingDecelRate = 0.8 # brake_travel/s while trying to stop
+    ret.startAccel = -0.8
+    ret.stopAccel = -2.0
     ret.startingAccelRate = 3.2 # brake_travel/s while releasing on restart
+    ret.stoppingDecelRate = 0.8 # brake_travel/s while trying to stop
+    ret.vEgoStopping = 0.5
+    ret.vEgoStarting = 0.5
     ret.stoppingControl = True
     ret.longitudinalTuning.deadzoneBP = [0.]
     ret.longitudinalTuning.deadzoneV = [0.]
@@ -89,7 +96,8 @@ class CarInterfaceBase():
     ret.longitudinalTuning.kpV = [1.]
     ret.longitudinalTuning.kiBP = [0.]
     ret.longitudinalTuning.kiV = [1.]
-    ret.longitudinalActuatorDelay = 0.15
+    ret.longitudinalActuatorDelayLowerBound = 0.15
+    ret.longitudinalActuatorDelayUpperBound = 0.15
     return ret
 
   # returns a car.CarState, pass in car.CarControl
@@ -116,8 +124,8 @@ class CarInterfaceBase():
       events.add(EventName.wrongCarMode)
     if cs_out.espDisabled:
       events.add(EventName.espDisabled)
-    if cs_out.gasPressed and self.op_params.get('disengage_on_gas'):
-      events.add(EventName.gasPressed)
+#    if cs_out.gasPressed:
+#      events.add(EventName.gasPressed)
     if cs_out.stockFcw:
       events.add(EventName.stockFcw)
     if cs_out.stockAeb:
@@ -136,7 +144,8 @@ class CarInterfaceBase():
     elif cs_out.steerWarning:
       # only escalate to the harsher alert after the condition has
       # persisted for 0.5s and we're certain that the user isn't overriding
-      if self.steering_unpressed > int(0.5/DT_CTRL) and self.steer_warning > int(0.5/DT_CTRL):
+      if not cs_out.standstill and self.steering_unpressed > int(0.5 / DT_CTRL) and \
+         self.steer_warning > int(0.5 / DT_CTRL):
         events.add(EventName.steerTempUnavailable)
       else:
         events.add(EventName.steerTempUnavailableSilent)
@@ -144,8 +153,7 @@ class CarInterfaceBase():
     # Disable on rising edge of gas or brake. Also disable on brake when speed > 0.
     # Optionally allow to press gas at zero speed to resume.
     # e.g. Chrysler does not spam the resume button yet, so resuming with gas is handy. FIXME!
-    if (self.op_params.get('disengage_on_gas') and cs_out.gasPressed and (not self.CS.out.gasPressed) and cs_out.vEgo > gas_resume_speed) or \
-       (cs_out.brakePressed and (not self.CS.out.brakePressed or not cs_out.standstill)):
+    if (cs_out.brakePressed and (not self.CS.out.brakePressed or not cs_out.standstill)):
       events.add(EventName.pedalPressed)
 
     # we engage when pcm is active (rising edge)
