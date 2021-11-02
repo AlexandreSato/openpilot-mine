@@ -1,3 +1,15 @@
+This fork enables Stop and Go in global vehicles based on Toyota Safet Sense 2. (Thanks to Virtually Chris, Shane Smiskol, @mlp, Grekiki, Alexandre Sato, Gravyfries and @Sunnyhaibin)
+
+it also has the steering wheel button to change the distance of follow running (thanks @Krkeegan).
+and long press inc/decresing ACC speed 5 in 5 mph/kph (thanks @cydia2020)
+
+WARNING: The essence of the concept of this fork is to be quick at startup to exploit on Toyota's PCM-Cruise. Therefore the fingerprint process is done by hard-coding to the detriment of the dynamic process that has been suppressed. SO if your vehicle is different from "TOYOTA COROLLA HYBRID TSS2 2019" you will need to update the launch_env.sh file exactly as the description of your vehicle is written in values.py
+
+Se quiser agradecer pode me fazer um PIX de qualquer valor para 11 98546-1498 If you want to thank please join the process of sponsoring Shane Smiskol on his github
+
+this fork is based in:
+tested stock release2 0.8.10 (stable prodution version)
+
 ![](https://user-images.githubusercontent.com/37757984/127420744-89ca219c-8f8e-46d3-bccf-c1cb53b81bb1.png)
 
 Table of Contents
