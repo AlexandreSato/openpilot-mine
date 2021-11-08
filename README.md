@@ -9,8 +9,22 @@ it also has the steering wheel button to change the distance of follow running (
 WARNING: The essence of the concept of this fork is to be quick at startup to exploit on Toyota's PCM-Cruise. Therefore the fingerprint process is done by hard-coding to the detriment of the dynamic process that has been suppressed. 
 SO if your vehicle is different from "TOYOTA COROLLA HYBRID TSS2 2019" you will need to update the launch_env.sh file exactly as the description of your vehicle is written in values.py
 
-Se quiser agradecer pode me fazer um PIX de qualquer valor para 11 98546-1498
+Example: If my corolla is not hybrid i need do a ssh and:
+```
+echo 'export FINGERPRINT="TOYOTA COROLLA TSS2 2019"' >> launch_env.sh
+```
+The first engine start is expected to show a cruise fault error, just ignore it and wait 30 seconds with the engine off and only then start again. This error should happen only in the first match and then no longer repeat itself.
+
+Se quiser agradecer pode me fazer um PIX de qualquer valor para 11 98546-1498 
 If you want to thank please join the process of sponsoring Shane Smiskol on his github
+
+
+If your TSS2 corolla is hybrid equal to mine you can proceed a format factory (turning off your c2 and turning on by holding down the volume increase button) and then instead of putting ```https://openpilot.comma.ai``` in the custom fork installation url use ``` installer.comma.ai/alexandresato```
+
+
+Now if you already know how to perform a ssh (if you do not know how to learn at: https://github.com/commaai/openpilot/wiki/SSH) run this command:
+```cd /data/openpilot; scons --clean; cd ..; rm -rf openpilot; git clone --recurse-submodules https://github.com/alexandresato/openpilot; reboot```
+
 
 this fork is based in:
 # Stock Additions [Update 2](/SA_RELEASES.md) (0.8.9)
