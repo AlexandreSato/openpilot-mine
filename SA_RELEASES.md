@@ -1,7 +1,7 @@
 Stock Additions Update 2 - 2021-08-15 (0.8.9)
 ===
  * Testando fazer o carro sair mais rápido no Stop and Go
- * Cor verde muito louca
+ * Cor verde muito louca, tipo o comma3
 
 Stock Additions Update 1 - 2021-08-15 (0.8.7)
 ===
