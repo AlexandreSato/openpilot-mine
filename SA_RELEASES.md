@@ -1,4 +1,4 @@
-Stock Additions Update 2 - 2021-08-15 (0.8.9)
+Sato SnG TSS2 Update 0 - 2021-11-09 (0.8.9)
 ===
  * The car accelerates slightly faster on Stop and Go.
  * Nice green color.
