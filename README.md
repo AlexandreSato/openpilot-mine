@@ -19,7 +19,7 @@ Se quiser agradecer pode me fazer um PIX de qualquer valor para 11 98546-1498
 If you want to thank please join the process of sponsoring Shane Smiskol on his github
 
 
-If your TSS2 corolla is hybrid equal to mine you can proceed a format factory (turning off your c2 and turning on by holding down the volume increase button) and then instead of putting ```https://openpilot.comma.ai``` in the custom fork installation url use ``` installer.comma.ai/alexandresato```
+If your TSS2 corolla is hybrid equal to mine you can proceed a format factory (turning off your c2 and turning on by holding down the volume increase button) and then instead of putting ```https://openpilot.comma.ai``` in the custom fork installation url use ``` installer.comma.ai/alexandresato/master```
 
 
 Now if you already know how to perform a ssh (if you do not know how to learn at: https://github.com/commaai/openpilot/wiki/SSH) run this command:
