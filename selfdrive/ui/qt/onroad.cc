@@ -135,6 +135,7 @@ ButtonsWindow::ButtonsWindow(QWidget *parent) : QWidget(parent) {
   btns_layout->addStretch(4);
   btns_layout->addWidget(mlButton, 0, Qt::AlignHCenter | Qt::AlignBottom);
   btns_layout->addStretch(3);
+  mlButton->hide();
 
   dfButton = new QPushButton("DF\nprofile");
   QObject::connect(dfButton, &QPushButton::clicked, [=]() {

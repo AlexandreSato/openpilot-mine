@@ -1,3 +1,8 @@
+Sato SnG TSS2 Update 1 - 2021-12-16 (0.8.9)
+===
+ * Hide the broken e2e_long button.
+ * Nice Tesla Sounds.
+
 Sato SnG TSS2 Update 0 - 2021-11-09 (0.8.9)
 ===
  * The car accelerates slightly faster on Stop and Go.
