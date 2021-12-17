@@ -2,6 +2,7 @@ Sato SnG TSS2 Update 1 - 2021-12-16 (0.8.9)
 ===
  * Hide the broken e2e_long button.
  * Nice Tesla Sounds.
+ * Now every touch changes the speed of 5/5kph or mph, you can disable in./op_edit.py
 
 Sato SnG TSS2 Update 0 - 2021-11-09 (0.8.9)
 ===

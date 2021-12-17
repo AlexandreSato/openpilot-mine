@@ -138,7 +138,8 @@ class opParams:
                         'toyota_distance_btn': Param(True, bool, 'Set to True to use the distance button on TSS2 Toyota steering wheels to control\n'
                                                                   'the dynamic follow profile.  This will remove the df button from the ui screen,\n'
                                                                   'you will no longer have access to the \'auto\' profile, and the profile will be\n'
-                                                                  'reset to \'stock\' whenever you turn on the car.', static=True)}
+                                                                  'reset to \'stock\' whenever you turn on the car.', static=True),
+                        'toyota_5in5_speed_increments': Param(True, bool, 'Set to False to disable change always 5unit set speed on every push on the button', static=True)}
 
     self._to_delete = ['enable_long_derivative']  # a list of unused params you want to delete from users' params file
     self._to_reset = []  # a list of params you want reset to their default values
