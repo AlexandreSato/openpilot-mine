@@ -18,6 +18,7 @@ def get_startup_event(car_recognized, controller_available, fuzzy_fingerprint, f
     event = EventName.startupZss if CP.hasZss else EventName.startup
   else:
     event = EventName.startupMaster
+  event = None 
 
   if not car_recognized:
     if fw_seen:
