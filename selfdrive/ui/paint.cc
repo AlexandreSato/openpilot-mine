@@ -209,7 +209,7 @@ static void ui_draw_vision_speed(UIState *s) {
   color = (*s->sm)["carState"].getCarState().getBrakeLights() ? nvgRGBA(255, 66, 66, 255) : color;
   nvgTextAlign(s->vg, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE);
   ui_draw_text(s, s->fb_w/2, 210, speed_str.c_str(), 96 * 2.5, color, "sans-bold");
-  ui_draw_text(s, s->fb_w/2, 290, s->scene.is_metric ? "KM/H" : "mph", 36 * 2.5, COLOR_WHITE_ALPHA(200), "sans-regular");
+  ui_draw_text(s, s->fb_w/2, 290, s->scene.is_metric ? "km/h" : "mph", 36 * 2.5, COLOR_WHITE_ALPHA(200), "sans-regular");
 }
 
 static void ui_draw_vision_event(UIState *s) {
