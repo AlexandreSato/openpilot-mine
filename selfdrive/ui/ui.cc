@@ -154,6 +154,9 @@ static void update_state(UIState *s) {
     scene.engageable = sm["controlsState"].getControlsState().getEngageable();
     scene.dm_active = sm["driverMonitoringState"].getDriverMonitoringState().getIsActiveMode();
   }
+
+  s->scene.headlightON = sm["carState"].getCarState().getHeadlightON();
+
   if (sm.updated("modelV2") && s->vg) {
     auto model = sm["modelV2"].getModelV2();
     update_model(s, model);
@@ -385,6 +388,11 @@ void Device::updateBrightness(const UIState &s) {
   int brightness = brightness_filter.update(clipped_brightness);
   if (!awake) {
     brightness = 0;
+  }
+  if (s.scene.headlightON) {
+    brightness = brightness * 0.5;
+  } else {
+    brightness = brightness * 1.0;
   }
 
   if (brightness != last_brightness) {
