@@ -15,15 +15,30 @@ echo 'export FINGERPRINT="TOYOTA COROLLA TSS2 2019"' >> launch_env.sh
 ```
 The first engine start is expected to show a cruise fault error, just ignore it and wait 30 seconds with the engine off and only then start again. This error should happen only in the first match and then no longer repeat itself.
 
-Se quiser agradecer pode me fazer um PIX de qualquer valor para 11 98546-1498 
-If you want to thank please join the process of sponsoring Shane Smiskol on his github
-
-
 If your TSS2 corolla is hybrid equal to mine you can proceed a format factory (turning off your c2 and turning on by holding down the volume increase button) and then instead of putting ```https://openpilot.comma.ai``` in the custom fork installation url use ``` installer.comma.ai/alexandresato/master```
-
 
 Now if you already know how to perform a ssh (if you do not know how to learn at: https://github.com/commaai/openpilot/wiki/SSH) run this command:
 ```cd /data/openpilot; scons --clean; cd ..; rm -rf openpilot; git clone --recurse-submodules https://github.com/alexandresato/openpilot; reboot```
+
+
+💰 Donate 💰
+---
+
+If you find any of the features useful, feel free to donate to support for future feature development.
+
+Thank you for your continuous love and support! Enjoy 🥰
+
+**PayPal:**
+
+<a href="https://www.paypal.com/donate/?hosted_button_id=JN4E8PTL4QBZG" target="_blank">
+<img src="https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif" alt="PayPal this" title="PayPal - The safer, easier way to pay online!" border="0" />
+</a>
+<br></br>
+
+**PayPal QR Code:**
+
+![Paypall.png.png](Paypall.png)
+
 
 
 this fork is based in:
