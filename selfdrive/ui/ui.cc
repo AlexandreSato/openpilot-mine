@@ -165,7 +165,6 @@ static void update_state(UIState *s) {
 
   if (sm.updated("carState")) {
     auto cs_data = sm["carState"].getCarState();
-    auto cs_data = sm["carState"].getCarState();
     auto cruiseState = scene.car_state.getCruiseState();
     scene.awake = cruiseState.getCruiseSwState();
     if (scene.leftBlinker != cs_data.getLeftBlinker() || scene.leftBlinker != cs_data.getRightBlinker() ) {
