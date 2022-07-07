@@ -202,6 +202,81 @@ static void ui_draw_vision_maxspeed(UIState *s) {
 static void ui_draw_vision_speed(UIState *s) {
   const float speed = std::max(0.0, (*s->sm)["carState"].getCarState().getVEgo() * (s->scene.is_metric ? 3.6 : 2.2369363));
   const std::string speed_str = std::to_string((int)std::nearbyint(speed));
+
+  // turning blinker from kegman, moving signal by OPKR
+  UIScene &scene = s->scene;
+  const int viz_speed_w = 250;
+  const int viz_speed_x = s->fb_w/2 - viz_speed_w/2;
+  const int header_h2 = 400;
+  if (scene.leftBlinker /* && !scene.comma_stock_ui */) {
+    nvgBeginPath(s->vg);
+    nvgMoveTo(s->vg, viz_speed_x, header_h2/4);
+    nvgLineTo(s->vg, viz_speed_x - viz_speed_w/4, header_h2/4);
+    nvgLineTo(s->vg, viz_speed_x - viz_speed_w/2, header_h2/2);
+    nvgLineTo(s->vg, viz_speed_x - viz_speed_w/4, header_h2/4 + header_h2/2);
+    nvgLineTo(s->vg, viz_speed_x, header_h2/4 + header_h2/2);
+    nvgLineTo(s->vg, viz_speed_x - viz_speed_w/4, header_h2/2);
+    nvgClosePath(s->vg);
+    nvgFillColor(s->vg, nvgRGBA(58,234,42,(scene.blinker_blinkingrate<=120 && scene.blinker_blinkingrate>=50)?115:0));
+    nvgFill(s->vg);
+    nvgBeginPath(s->vg);
+    nvgMoveTo(s->vg, viz_speed_x - 125, header_h2/4);
+    nvgLineTo(s->vg, viz_speed_x - 125 - viz_speed_w/4, header_h2/4);
+    nvgLineTo(s->vg, viz_speed_x - 125 - viz_speed_w/2, header_h2/2);
+    nvgLineTo(s->vg, viz_speed_x - 125 - viz_speed_w/4, header_h2/4 + header_h2/2);
+    nvgLineTo(s->vg, viz_speed_x - 125, header_h2/4 + header_h2/2);
+    nvgLineTo(s->vg, viz_speed_x - 125 - viz_speed_w/4, header_h2/2);
+    nvgClosePath(s->vg);
+    nvgFillColor(s->vg, nvgRGBA(58,234,42,(scene.blinker_blinkingrate<=100 && scene.blinker_blinkingrate>=50)?185:0));
+    nvgFill(s->vg);
+    nvgBeginPath(s->vg);
+    nvgMoveTo(s->vg, viz_speed_x - 250, header_h2/4);
+    nvgLineTo(s->vg, viz_speed_x - 250 - viz_speed_w/4, header_h2/4);
+    nvgLineTo(s->vg, viz_speed_x - 250 - viz_speed_w/2, header_h2/2);
+    nvgLineTo(s->vg, viz_speed_x - 250 - viz_speed_w/4, header_h2/4 + header_h2/2);
+    nvgLineTo(s->vg, viz_speed_x - 250, header_h2/4 + header_h2/2);
+    nvgLineTo(s->vg, viz_speed_x - 250 - viz_speed_w/4, header_h2/2);
+    nvgClosePath(s->vg);
+    nvgFillColor(s->vg, nvgRGBA(58,234,42,(scene.blinker_blinkingrate<=80 && scene.blinker_blinkingrate>=50)?255:0));
+    nvgFill(s->vg);
+  }
+  if (scene.rightBlinker /* && !scene.comma_stock_ui */) {
+    nvgBeginPath(s->vg);
+    nvgMoveTo(s->vg, viz_speed_x + viz_speed_w, header_h2/4);
+    nvgLineTo(s->vg, viz_speed_x + viz_speed_w + viz_speed_w/4, header_h2/4);
+    nvgLineTo(s->vg, viz_speed_x + viz_speed_w + viz_speed_w/2, header_h2/2);
+    nvgLineTo(s->vg, viz_speed_x + viz_speed_w + viz_speed_w/4, header_h2/4 + header_h2/2);
+    nvgLineTo(s->vg, viz_speed_x + viz_speed_w, header_h2/4 + header_h2/2);
+    nvgLineTo(s->vg, viz_speed_x + viz_speed_w + viz_speed_w/4, header_h2/2);
+    nvgClosePath(s->vg);
+    nvgFillColor(s->vg, nvgRGBA(58,234,42,(scene.blinker_blinkingrate<=120 && scene.blinker_blinkingrate>=50)?115:0));
+    nvgFill(s->vg);
+    nvgBeginPath(s->vg);
+    nvgMoveTo(s->vg, viz_speed_x + viz_speed_w + 125, header_h2/4);
+    nvgLineTo(s->vg, viz_speed_x + viz_speed_w + 125 + viz_speed_w/4, header_h2/4);
+    nvgLineTo(s->vg, viz_speed_x + viz_speed_w + 125 + viz_speed_w/2, header_h2/2);
+    nvgLineTo(s->vg, viz_speed_x + viz_speed_w + 125 + viz_speed_w/4, header_h2/4 + header_h2/2);
+    nvgLineTo(s->vg, viz_speed_x + viz_speed_w + 125, header_h2/4 + header_h2/2);
+    nvgLineTo(s->vg, viz_speed_x + viz_speed_w + 125 + viz_speed_w/4, header_h2/2);
+    nvgClosePath(s->vg);
+    nvgFillColor(s->vg, nvgRGBA(58,234,42,(scene.blinker_blinkingrate<=100 && scene.blinker_blinkingrate>=50)?185:0));
+    nvgFill(s->vg);
+    nvgBeginPath(s->vg);
+    nvgMoveTo(s->vg, viz_speed_x + viz_speed_w + 250, header_h2/4);
+    nvgLineTo(s->vg, viz_speed_x + viz_speed_w + 250 + viz_speed_w/4, header_h2/4);
+    nvgLineTo(s->vg, viz_speed_x + viz_speed_w + 250 + viz_speed_w/2, header_h2/2);
+    nvgLineTo(s->vg, viz_speed_x + viz_speed_w + 250 + viz_speed_w/4, header_h2/4 + header_h2/2);
+    nvgLineTo(s->vg, viz_speed_x + viz_speed_w + 250, header_h2/4 + header_h2/2);
+    nvgLineTo(s->vg, viz_speed_x + viz_speed_w + 250 + viz_speed_w/4, header_h2/2);
+    nvgClosePath(s->vg);
+    nvgFillColor(s->vg, nvgRGBA(58,234,42,(scene.blinker_blinkingrate<=80 && scene.blinker_blinkingrate>=50)?255:0));
+    nvgFill(s->vg);
+    }
+  if (scene.leftBlinker || scene.rightBlinker) {
+    scene.blinker_blinkingrate -= 10;
+    if(scene.blinker_blinkingrate < 40) scene.blinker_blinkingrate = 120;
+  }
+
   NVGcolor color = COLOR_WHITE;
   if((speed > 50) && (speed < 60)) {color = nvgRGBA(66, 255, 66, 255);}
   if((speed > 70) && (speed < 80)) {color = nvgRGBA(66, 255, 66, 255);}

@@ -162,6 +162,15 @@ static void update_state(UIState *s) {
     update_model(s, model);
     update_leads(s, model);
   }
+
+  if (sm.updated("carState")) {
+    auto cs_data = sm["carState"].getCarState();
+    if (scene.leftBlinker != cs_data.getLeftBlinker() || scene.leftBlinker != cs_data.getRightBlinker() )
+      scene.blinker_blinkingrate = 120;
+    scene.leftBlinker = cs_data.getLeftBlinker();
+    scene.rightBlinker = cs_data.getRightBlinker();
+  }
+
   if (sm.updated("liveCalibration")) {
     scene.world_objects_visible = true;
     auto rpy_list = sm["liveCalibration"].getLiveCalibration().getRpyCalib();

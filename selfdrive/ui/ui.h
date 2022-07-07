@@ -103,6 +103,9 @@ typedef struct UIScene {
   int dfButtonStatus = 0;
   int lsButtonStatus = 0;
   bool mlButtonEnabled = false;
+  bool leftBlinker;
+  bool rightBlinker;
+  int blinker_blinkingrate;
 
   mat3 view_from_calib;
   bool world_objects_visible;
