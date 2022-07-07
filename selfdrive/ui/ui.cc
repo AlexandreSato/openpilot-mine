@@ -169,7 +169,7 @@ static void update_state(UIState *s) {
       scene.blinker_blinkingrate = 120;
     }
     if (scene.leftBlinker || scene.rightBlinker) {
-      scene.blinker_blinkingrate -= 5;
+      scene.blinker_blinkingrate -= 1;
       if(scene.blinker_blinkingrate < 0) scene.blinker_blinkingrate = 120;
     }   
     scene.leftBlinker = cs_data.getLeftBlinker();
