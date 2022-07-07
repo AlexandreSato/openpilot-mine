@@ -207,7 +207,7 @@ static void ui_draw_vision_speed(UIState *s) {
   UIScene &scene = s->scene;
   const int viz_speed_w = 250;
   const int viz_speed_x = s->fb_w/2 - viz_speed_w/2;
-  const int header_h2 = 300;  
+  const int header_h2 = 350;
   if (scene.leftBlinker /* && !scene.comma_stock_ui */) {
     nvgBeginPath(s->vg);
     nvgMoveTo(s->vg, viz_speed_x, header_h2/4);
