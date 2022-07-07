@@ -130,7 +130,7 @@ class CarState(CarStateBase):
     # send your own ACC_CONTROL msg on startup with ACC_TYPE set to 1
     if (self.CP.carFingerprint not in TSS2_CAR and self.CP.carFingerprint != CAR.LEXUS_IS) or \
        (self.CP.carFingerprint in TSS2_CAR and self.acc_type == 1):
-      self.low_speed_lockout = cp.vl["PCM_CRUISE_2"]["LOW_SPEED_LOCKOUT"] == 2
+      self.low_speed_lockout = False
 
     self.pcm_acc_status = cp.vl["PCM_CRUISE"]["CRUISE_STATE"]
     if self.CP.carFingerprint in NO_STOP_TIMER_CAR or self.CP.enableGasInterceptor:
