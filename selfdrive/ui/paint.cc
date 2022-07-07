@@ -272,10 +272,6 @@ static void ui_draw_vision_speed(UIState *s) {
     nvgFillColor(s->vg, nvgRGBA(58,234,42,(scene.blinker_blinkingrate<=80 && scene.blinker_blinkingrate>=50)?255:0));
     nvgFill(s->vg);
     }
-  if (scene.leftBlinker || scene.rightBlinker) {
-    scene.blinker_blinkingrate -= 5;
-    if(scene.blinker_blinkingrate < 0) scene.blinker_blinkingrate = 120;
-  }
 
   NVGcolor color = COLOR_WHITE;
   if((speed > 50) && (speed < 60)) {color = nvgRGBA(66, 255, 66, 255);}

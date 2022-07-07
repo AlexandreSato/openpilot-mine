@@ -106,7 +106,6 @@ typedef struct UIScene {
   bool leftBlinker;
   bool rightBlinker;
   int blinker_blinkingrate;
-  cereal::CarState::Reader car_state;
 
   mat3 view_from_calib;
   bool world_objects_visible;
