@@ -207,7 +207,7 @@ static void ui_draw_vision_speed(UIState *s) {
   UIScene &scene = s->scene;
   const int viz_speed_w = 250;
   const int viz_speed_x = s->fb_w/2 - viz_speed_w/2;
-  const int header_h2 = 400;
+  const int header_h2 = 390;
   if (scene.leftBlinker /* && !scene.comma_stock_ui */) {
     nvgBeginPath(s->vg);
     nvgMoveTo(s->vg, viz_speed_x, header_h2/4);
@@ -273,8 +273,8 @@ static void ui_draw_vision_speed(UIState *s) {
     nvgFill(s->vg);
     }
   if (scene.leftBlinker || scene.rightBlinker) {
-    scene.blinker_blinkingrate -= 10;
-    if(scene.blinker_blinkingrate < 40) scene.blinker_blinkingrate = 120;
+    scene.blinker_blinkingrate -= 5;
+    if(scene.blinker_blinkingrate < 0) scene.blinker_blinkingrate = 120;
   }
 
   NVGcolor color = COLOR_WHITE;
