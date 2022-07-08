@@ -273,9 +273,9 @@ static void ui_draw_vision_speed(UIState *s) {
     nvgFill(s->vg);
   }
   if (scene.leftBlinker || scene.rightBlinker) {
-    scene.blinker_blinkingrate -= 3;
+    scene.blinker_blinkingrate -= 7;
     if(scene.blinker_blinkingrate < 0) {
-      scene.blinker_blinkingrate = 120;
+      s->scene.blinker_blinkingrate = 120;
     }
   }
 
