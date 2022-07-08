@@ -204,7 +204,7 @@ static void ui_draw_vision_speed(UIState *s) {
   const std::string speed_str = std::to_string((int)std::nearbyint(speed));
 
   // turning blinker from kegman, moving signal by OPKR
-  const UIScene &scene = *s->scene;
+  const UIScene &scene = s->scene;
   const int viz_speed_w = 250;
   const int viz_speed_x = s->fb_w/2 - viz_speed_w/2;
   const int header_h2 = 350;
