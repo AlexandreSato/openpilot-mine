@@ -273,8 +273,10 @@ static void ui_draw_vision_speed(UIState *s) {
     nvgFill(s->vg);
   }
   if (scene.leftBlinker || scene.rightBlinker) {
-    s->scene.blinker_blinkingrate -= 3;
-    if(s->scene.blinker_blinkingrate < 0) s->scene.blinker_blinkingrate = 120;
+    scene.blinker_blinkingrate -= 3;
+    if(scene.blinker_blinkingrate < 0) {
+      scene.blinker_blinkingrate = 120;
+    }
   }
 
   NVGcolor color = COLOR_WHITE;
