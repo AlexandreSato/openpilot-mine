@@ -259,7 +259,7 @@ static void ui_draw_vision_speed(UIState *s) {
     nvgLineTo(s->vg, viz_speed_x + viz_speed_w + 125, header_h2/4 + header_h2/2);
     nvgLineTo(s->vg, viz_speed_x + viz_speed_w + 125 + viz_speed_w/4, header_h2/2);
     nvgClosePath(s->vg);
-    nvgFillColor(s->vg, nvgRGBA(58,234,42,(scene.blinker_blinkingrate<=118 && scene.blinker_blinkingrate>=115)?185:0));
+    nvgFillColor(s->vg, nvgRGBA(58,234,42,(/* scene.blinker_blinkingrate<=118 && */ scene.blinker_blinkingrate>=60)?190:30));
     nvgFill(s->vg);
     nvgBeginPath(s->vg);
     nvgMoveTo(s->vg, viz_speed_x + viz_speed_w + 250, header_h2/4);
