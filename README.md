@@ -13,8 +13,6 @@ Example: If my corolla is not hybrid i need do a ssh and:
 ```
 echo 'export FINGERPRINT="TOYOTA COROLLA TSS2 2019"' >> launch_env.sh
 ```
-The first engine start is expected to show a cruise fault error, just ignore it and wait 30 seconds with the engine off and only then start again. This error should happen only in the first match and then no longer repeat itself.
-
 If your TSS2 corolla is hybrid equal to mine you can proceed a format factory (turning off your c2 and turning on by holding down the volume increase button) and then instead of putting ```https://openpilot.comma.ai``` in the custom fork installation url use ``` installer.comma.ai/alexandresato/master```
 
 Now if you already know how to perform a ssh (if you do not know how to learn at: https://github.com/commaai/openpilot/wiki/SSH) run this command:
