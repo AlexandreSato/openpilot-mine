@@ -16,7 +16,10 @@ echo 'export FINGERPRINT="TOYOTA COROLLA TSS2 2019"' >> launch_env.sh
 If your TSS2 corolla is hybrid equal to mine you can proceed a format factory (turning off your c2 and turning on by holding down the volume increase button) and then instead of putting ```https://openpilot.comma.ai``` in the custom fork installation url use ``` installer.comma.ai/alexandresato/master```
 
 Now if you already know how to perform a ssh (if you do not know how to learn at: https://github.com/commaai/openpilot/wiki/SSH) run this command:
-```cd /data/openpilot; scons --clean; cd ..; rm -rf openpilot; git clone --recurse-submodules https://github.com/alexandresato/openpilot; reboot```
+```
+cd /data/openpilot; scons --clean; cd ..; rm -rf openpilot; git clone --recurse-submodules https://github.com/alexandresato/openpilot-mine.git openpilot; reboot; sudo reboot 
+
+```
 
 
 💰 Donate 💰
