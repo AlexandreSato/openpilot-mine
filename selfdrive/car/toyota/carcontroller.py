@@ -154,7 +154,7 @@ class CarController():
     # - there is something to display
     # - there is something to stop displaying
     fcw_alert = hud_alert == VisualAlert.fcw
-    lda_hold_wheel = hud_control.visualAlert in (VisualAlert.steerRequired, VisualAlert.ldw)
+    lda_hold_wheel = hud_alert in [VisualAlert.steerRequired, VisualAlert.ldw]
 
     send_ui = False
     if ((fcw_alert or lda_hold_wheel) and not self.alert_active) or \
@@ -168,7 +168,7 @@ class CarController():
     # send additional 5 messages after disengage with silent alert, then 5 with no alert to quickly hide alert
     lda_hold_wheel |= self.frame - self.pcm_cancel_frame < 5
     if (frame % 100 == 0 or send_ui):
-      can_sends.append(create_ui_command(self.packer, lda_hold_wheel, left_line, right_line, left_lane_depart, right_lane_depart))
+      can_sends.append(create_ui_command(self.packer, lda_hold_wheel, left_line, right_line, left_lane_depart, right_lane_depart, enabled))
 
     if frame % 100 == 0 and CS.CP.enableDsu:
       can_sends.append(create_fcw_command(self.packer, fcw_alert))

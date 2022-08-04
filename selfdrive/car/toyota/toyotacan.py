@@ -66,7 +66,7 @@ def create_fcw_command(packer, fcw):
   return packer.make_can_msg("ACC_HUD", 0, values)
 
 
-def create_ui_command(packer, lda_hold_wheel, left_line, right_line, left_lane_depart, right_lane_depart):
+def create_ui_command(packer, lda_hold_wheel, left_line, right_line, left_lane_depart, right_lane_depart, enabled):
   values = {
     "RIGHT_LINE": 3 if right_lane_depart else 1 if right_line else 2,
     "LEFT_LINE": 3 if left_lane_depart else 1 if left_line else 2,
