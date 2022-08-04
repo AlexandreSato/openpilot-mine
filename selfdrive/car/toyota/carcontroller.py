@@ -52,6 +52,10 @@ class CarController():
     self.steer_rate_limited = False
     self.use_interceptor = False
     self.standstill_hack = opParams().get('standstill_hack')
+    # silent disengage
+    self.frame = 0
+    self.pcm_cancel_frame = float('-inf')
+    # self.prev_pcm_cancel = 0
 
     self.packer = CANPacker(dbc_name)
 
@@ -96,6 +100,10 @@ class CarController():
     if not enabled and CS.pcm_acc_status:
       # send pcm acc cancel cmd if drive is disabled but pcm is still on, or if the system can't be activated
       pcm_cancel_cmd = 1
+
+    # silent disengage
+    if pcm_cancel_cmd:
+      self.pcm_cancel_frame = self.frame
 
     # on entering standstill, send standstill request
     if CS.out.standstill and not self.last_standstill and CS.CP.carFingerprint not in NO_STOP_TIMER_CAR and not self.standstill_hack:
@@ -146,19 +154,21 @@ class CarController():
     # - there is something to display
     # - there is something to stop displaying
     fcw_alert = hud_alert == VisualAlert.fcw
-    steer_alert = hud_alert in [VisualAlert.steerRequired, VisualAlert.ldw]
+    lda_hold_wheel = hud_control.visualAlert in (VisualAlert.steerRequired, VisualAlert.ldw)
 
     send_ui = False
-    if ((fcw_alert or steer_alert) and not self.alert_active) or \
-       (not (fcw_alert or steer_alert) and self.alert_active):
+    if ((fcw_alert or lda_hold_wheel) and not self.alert_active) or \
+       (not (fcw_alert or lda_hold_wheel) and self.alert_active):
       send_ui = True
       self.alert_active = not self.alert_active
-    elif pcm_cancel_cmd:
-      # forcing the pcm to disengage causes a bad fault sound so play a good sound instead
+    elif self.frame - self.pcm_cancel_frame < 10:
+      # forcing the pcm to disengage causes a bad fault sound so mask with a silent alert
       send_ui = True
 
+    # send additional 5 messages after disengage with silent alert, then 5 with no alert to quickly hide alert
+    lda_hold_wheel |= self.frame - self.pcm_cancel_frame < 5
     if (frame % 100 == 0 or send_ui):
-      can_sends.append(create_ui_command(self.packer, steer_alert, pcm_cancel_cmd, left_line, right_line, left_lane_depart, right_lane_depart))
+      can_sends.append(create_ui_command(self.packer, lda_hold_wheel, left_line, right_line, left_lane_depart, right_lane_depart))
 
     if frame % 100 == 0 and CS.CP.enableDsu:
       can_sends.append(create_fcw_command(self.packer, fcw_alert))
@@ -168,5 +178,8 @@ class CarController():
     for (addr, cars, bus, fr_step, vl) in STATIC_DSU_MSGS:
       if frame % fr_step == 0 and CS.CP.enableDsu and CS.CP.carFingerprint in cars:
         can_sends.append(make_can_msg(addr, vl, bus))
+
+    # silent disengage
+    self.frame += 1
 
     return can_sends
