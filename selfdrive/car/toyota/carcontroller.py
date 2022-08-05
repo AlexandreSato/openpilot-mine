@@ -166,8 +166,6 @@ class CarController():
       # forcing the pcm to disengage causes a bad fault sound so mask with a silent alert
       send_ui = True
 
-    # send additional 5 messages after disengage with silent alert, then 5 with no alert to quickly hide alert
-    lda_hold_wheel |= self.frame - self.pcm_cancel_frame < 5
     if (frame % 100 == 0 or send_ui):
       can_sends.append(create_ui_command(self.packer, steer_alert, chime, left_line, right_line, left_lane_depart, right_lane_depart))
 
