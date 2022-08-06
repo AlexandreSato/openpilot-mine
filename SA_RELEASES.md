@@ -1,4 +1,7 @@
-Sato SnG TSS2 Update 1 - 2021-12-16 (0.8.9)
+Sato SnG TSS2 Update 2 - 2022-08-06 (0.8.9)
+===
+ * no more chime and reset setSpeed when braking at standStill 
+
 ===
  * Hide the broken e2e_long button.
  * Nice Tesla Sounds.
